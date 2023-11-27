@@ -244,11 +244,11 @@ def build_observation(raw_observation: Observation, env_configuration) -> np.nda
 
     return observation
 
-from balanced import balanced_agent
-from attacker import attacker_agent
-from miner import miner_agent
-from expander import expand_agent
-from defenser import defense_agent
+from utils.balanced import balanced_agent
+from utils.attacker import attacker_agent
+from utils.miner import miner_agent
+from utils.expander import expand_agent
+from utils.defenser import defense_agent
 
 
 def DQN_agent(raw_observation,config):

@@ -18,7 +18,7 @@ import numpy as np
 import tensorflow as tf
 import keras
 from keras import layers
-from reward_utils import get_board_value
+from utils.reward_utils import get_board_value
 
 
 """
@@ -38,14 +38,14 @@ max_steps_per_episode = 410 # 这个参数不用管，没啥用，因为我们�
 # Number of frames to take random action and observe output
 epsilon_random_frames = 400
 # Number of frames for exploration
-epsilon_greedy_frames = 800.0
+epsilon_greedy_frames = 1200.0
 # Maximum replay length
 # Note: The Deepmind paper suggests 1000000 however this causes memory issues
 max_memory_length = 100000
 # Train the model after 4 actions
 update_after_actions = 4 # 更新Q网络的频率
 # How often to update the target network
-update_target_network = 1000 # 更新Q-target网络的频率
+update_target_network = 400 # 更新Q-target网络的频率
 # 动作空间的维度
 num_actions = 5
 
@@ -69,19 +69,26 @@ class CustomKoreEnv(Env): # 继承游戏环境，增加一些适用于Qlearning�
         # Initialize the actual environment
         kore_env = make("kore_fleets", debug=True)
         
-        from real_balanced import balanced_agent
-        from agent_v1 import DQN_agent # 喜欢扩张领地和采矿
-        from attacker import attacker_agent
-        from miner import miner_agent
-        from expander import expand_agent
-        from defenser import defense_agent
+        from utils.real_balanced import balanced_agent
+        from agent_v1 import DQN_agent as DQN_agent_1 # 喜欢扩张领地和采矿
+        from utils.attacker import attacker_agent
+        from utils.miner import miner_agent
+        from utils.expander import expand_agent
+        from utils.defenser import defense_agent
         from agent_v2 import DQN_agent as DQN_agent_2  # 喜欢主动攻击别人的船厂
+        from agent_v3 import DQN_agent as DQN_agent_3 # 正在训练，让它自对弈
 
-        opps = [balanced_agent,DQN_agent,attacker_agent,miner_agent,expand_agent,defense_agent,DQN_agent_2]
+        # opps = [balanced_agent,DQN_agent,attacker_agent,miner_agent,expand_agent,defense_agent,DQN_agent_2]
         # opps = [balanced_agent,DQN_agent,DQN_agent_2]
         
         # opp_index = np.random.choice(3, p=[0.8, 0.1, 0.1])
-        opp_index = np.random.choice(7, p=[0.4, 0.04, 0.04, 0.04, 0.04, 0.4, 0.04])
+        # opp_index = np.random.choice(7, p=[0.4, 0.04, 0.04, 0.04, 0.04, 0.4, 0.04])
+
+        # opps = [balanced_agent, defense_agent, DQN_agent_1, DQN_agent_2, DQN_agent_3]
+        opps = [balanced_agent, defense_agent, DQN_agent_3]
+
+        # opp_index = np.random.choice(5,p=[0.4,0.3,0.05,0.05,0.2])
+        opp_index = np.random.choice(3,p=[0.4,0.3,0.3])
         
         agent2 =opps[opp_index]
         
@@ -97,41 +104,10 @@ class CustomKoreEnv(Env): # 继承游戏环境，增加一些适用于Qlearning�
         map_size = self.env_configuration.size
         self.board: Board = None
 
-        # Our observation space will be a matrix of size
-        # (map_size, map_size, 4).
-        #
-        # - The first layer is the kore count, which has
-        #   its values mapped to [0, 1]
-        #
-        # - The second layer is the fleet size, which has
-        #   its values mapped to [-1, 1] (negative values
-        #   are used to represent enemy fleets)
-        #
-        # - The third layer represents possible places that
-        #   the enemy fleets can be at the next turn. All
-        #   values are either -1 (enemy can be there) or
-        #   0 (enemy can't be there).
-        #
-        # - The fourth layer represents the amount of kore
-        #   that each fleet is carrying.
-        #
         self.observation_space = spaces.Box(
             low=-1, high=1, shape=(map_size, map_size, 7), dtype=np.float64
         )
 
-        # Our action space will be an array of shape (2,).
-        #
-        # - The following combinations will map to the
-        #   respective actions:
-        #
-        #   - [0, 0] -> Do nothing
-        #   - [0, 1] -> Build a new ship
-        #   - [1, 0] -> Launch a fleet with a simple flight
-        #     plan (e.g. N, E, S, W). All ships will be
-        #     used to launch the fleet.
-        #   - [1, 1] -> Same as [1, 0], but only half of the
-        #     ships will be used to launch the fleet.
-        #
         self.action_space = spaces.Box(low=0, high=1, shape=(2,), dtype=np.float64)
 
     def map_value(self, value: Union[int, float], enemy: bool = False,) -> float:
@@ -264,7 +240,7 @@ class CustomKoreEnv(Env): # 继承游戏环境，增加一些适用于Qlearning�
             kore_carried_by_fleet_layer[x, y] = self.map_value(kore)
 
         """
-        第五层：所有船厂的位置，区分敌(-1)我(+1)
+        第五层：所有船厂的位置以及每一回合最多能生产的ship数量（越大则说明这个船厂被控制了越久），区分敌(-1)我(+1)
         """
         shipyard_position_layer = np.zeros(
             (self.env_configuration.size, self.env_configuration.size)
@@ -276,9 +252,9 @@ class CustomKoreEnv(Env): # 继承游戏环境，增加一些适用于Qlearning�
             # - Get the size of the shipyard
             # - Check if the shipyard is an enemy shipyard
             if shipyard.player != board.current_player:
-                shipyard_position_layer[x,y] = -1
+                shipyard_position_layer[x,y] = -1 * shipyard.max_spawn
             else:
-                shipyard_position_layer[x,y] = +1
+                shipyard_position_layer[x,y] = +1 * shipyard.max_spawn
 
         
 
@@ -349,11 +325,11 @@ class CustomKoreEnv(Env): # 继承游戏环境，增加一些适用于Qlearning�
         return obs
 
     def step(self, action_type : int):
-        from balanced import balanced_agent
-        from attacker import attacker_agent
-        from miner import miner_agent
-        from expander import expand_agent
-        from defenser import defense_agent
+        from utils.balanced import balanced_agent
+        from utils.attacker import attacker_agent
+        from utils.miner import miner_agent
+        from utils.expander import expand_agent
+        from utils.defenser import defense_agent
         """
         Performs an action in the environment.
         """
@@ -411,10 +387,10 @@ class CustomKoreEnv(Env): # 继承游戏环境，增加一些适用于Qlearning�
 
             if we_won == 1:
                 print('本次战斗胜利！')
-                win_reward = we_won * (10000  +  5 * (400 - new_board.step))
+                win_reward = we_won * (8000  +  10 * (400 - new_board.step))
             if we_won == -1:
                 print('本次战斗失败！')
-                win_reward = old_reward + we_won * (500 + 5 * (400 - new_board.step))
+                win_reward = old_reward + we_won * (2000 + 10 * (400 - new_board.step))
 
             print(win_reward)
 
@@ -426,19 +402,23 @@ class CustomKoreEnv(Env): # 继承游戏环境，增加一些适用于Qlearning�
 
 
         # # 对侵略性的行为进行一些奖励（但不能太高）
-        # if action_type == 1 : # 中后期再进攻，前期努力发育，做大做强更重要，不要随意进攻
-        #     if previous_board.step > 200: 
-        #         modified_reward += 2
-        #     else:
-        #         modified_reward -= 2
+        if action_type == 1 : # 中后期再进攻，前期努力发育，做大做强更重要，不要随意进攻
+            if previous_board.step > 200: 
+                modified_reward += 1
+            else:
+                modified_reward -= 1
 
-        # if action_type == 3 and ( 100 < previous_board.step and previous_board.step < 350 ) : # 游戏的中途比较适合扩张领土，鼓励AI建造船厂
-        #     modified_reward += 2 + 2 * min(max(len(new_board.current_player.shipyards) - len(new_board.opponents[0].shipyards), 0) , 2)
-        #     # modified_reward += 5
+        if action_type == 3:
+            if ( 125 < previous_board.step and previous_board.step < 350 ) : # 游戏的中途比较适合扩张领土，鼓励AI建造船厂
+                modified_reward += 1 + min(max(len(new_board.current_player.shipyards) - len(new_board.opponents[0].shipyards), 0) , 2)
+            else:
+                modified_reward -= 1
 
         if action_type == 2 :  # 如果矿石很多了还采矿，就要惩罚；如果矿石不够而去采矿，则奖励
-            modified_reward +=  -0.05 * min(max( previous_board.current_player.kore - 1000, 0), 2000)
+            modified_reward +=  -0.025 * min(max( previous_board.current_player.kore - 1000, 0), 4000)
         # print(modified_reward)
+
+
         return observation, modified_reward, done, info
     
 
@@ -519,12 +499,10 @@ while True:  # Run until solved
 
         # Use epsilon-greedy for exploration 
         if frame_count < epsilon_random_frames or epsilon > random.random():
-            if episode_count % 5 == 0:
-                action = 0 #  用balanced策略战斗
-            elif episode_count % 5 == 1:
-                action = 4 # 用defenser策略战斗 
-            else:
-                action = random.choice(range(5))
+            # if episode_count % 5 == 1 or episode_count % 5 == 2:
+            #     action = 4 #  用defenser策略战斗
+            # else:
+            action = random.choice(range(5))
 
         else:
         # Predict action Q-values
@@ -631,10 +609,12 @@ while True:  # Run until solved
     # weights = model.get_weights()
     # with open('weight.pickle', 'wb') as f:
     #     pickle.dump(weights, f)
-    model.save_weights('my_weights_v3')  # 保存模型权重
+    # model.save_weights('my_weights_v3')  # 保存模型权重
+    model.save_weights('my_weights_v3.h5')
+    model.save_weights('weight/my_weights_v3.h5')
 
     now = time.time()
     # print("minute:", (now - start_time)/60)
-    if now - start_time > 2*60*60:
+    if now - start_time > 9*60*60:
         break
 

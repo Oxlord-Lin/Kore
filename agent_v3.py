@@ -36,7 +36,10 @@ def create_q_model():
 
 global model
 model = create_q_model()
-model.load_weights('my_weights_v3')
+# model.load_weights('my_weights_v3') # 这个相对路径不知道该咋写
+# model.load_weights('my_weights_v3.h5')
+model.load_weights('./weight/my_weights_v3.h5')
+
 
 def map_value(value: Union[int, float], enemy: bool = False,) -> float:
     """
@@ -169,7 +172,7 @@ def build_observation(raw_observation: Observation, env_configuration) -> np.nda
         kore_carried_by_fleet_layer[x, y] = map_value(kore)
 
     """
-    第五层：所有船厂的位置，区分敌(-1)我(+1)
+    第五层：所有船厂的位置以及每一回合最多能生产的ship数量（越大则说明这个船厂被控制了越久），区分敌(-1)我(+1)
     """
     shipyard_position_layer = np.zeros(
         (env_configuration.size, env_configuration.size)
@@ -181,9 +184,9 @@ def build_observation(raw_observation: Observation, env_configuration) -> np.nda
         # - Get the size of the shipyard
         # - Check if the shipyard is an enemy shipyard
         if shipyard.player != board.current_player:
-            shipyard_position_layer[x,y] = -1
+            shipyard_position_layer[x,y] = -1 * shipyard.max_spawn
         else:
-            shipyard_position_layer[x,y] = +1
+            shipyard_position_layer[x,y] = +1 * shipyard.max_spawn
 
     
 
@@ -218,7 +221,7 @@ def build_observation(raw_observation: Observation, env_configuration) -> np.nda
             enemy_fleet_next_postion_layer[x,y] = -1
 
     """
-    第七层：我方所有fleect下一步的位置，用 +1 表示
+    第七层：我方所有fleet下一步的位置，用 +1 表示
     """
     my_fleet_next_postion_layer = np.zeros(
         (env_configuration.size, env_configuration.size)
@@ -244,11 +247,11 @@ def build_observation(raw_observation: Observation, env_configuration) -> np.nda
 
     return observation
 
-from balanced import balanced_agent
-from attacker import attacker_agent
-from miner import miner_agent
-from expander import expand_agent
-from defenser import defense_agent
+from  utils.balanced import balanced_agent
+from  utils.attacker import attacker_agent
+from  utils.miner import miner_agent
+from  utils.expander import expand_agent
+from  utils.defenser import defense_agent
 
 
 def DQN_agent(raw_observation,config):
