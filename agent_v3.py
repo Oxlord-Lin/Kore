@@ -37,8 +37,8 @@ def create_q_model():
 global model
 model = create_q_model()
 # model.load_weights('my_weights_v3') # 这个相对路径不知道该咋写
-# model.load_weights('my_weights_v3.h5')
-model.load_weights('./weight/my_weights_v3.h5')
+model.load_weights('my_weights_v3.h5')
+# model.load_weights('./weight/my_weights_v3.h5')
 
 
 def map_value(value: Union[int, float], enemy: bool = False,) -> float:

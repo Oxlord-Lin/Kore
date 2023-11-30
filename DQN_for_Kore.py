@@ -611,7 +611,7 @@ while True:  # Run until solved
     #     pickle.dump(weights, f)
     # model.save_weights('my_weights_v3')  # 保存模型权重
     model.save_weights('my_weights_v3.h5')
-    model.save_weights('weight/my_weights_v3.h5')
+    # model.save_weights('weight/my_weights_v3.h5')
 
     now = time.time()
     # print("minute:", (now - start_time)/60)
