@@ -255,7 +255,7 @@ from  utils.defenser import defense_agent
 
 
 def DQN_agent(raw_observation,config):
-    """第三个训练出来的AI，还不知道水平如何"""
+    """第三个训练出来的AI"""
     global model
     observation = build_observation(raw_observation,config)
     observation_tensor = tf.convert_to_tensor(observation)

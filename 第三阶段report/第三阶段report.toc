@@ -1,0 +1,21 @@
+\contentsline {section}{\numberline {1}第一阶段回顾：基于蒙特卡洛树搜索与UCT的四子棋AI}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}算法框架回顾}{2}{subsection.1.1}%
+\contentsline {paragraph}{第一阶段：选择}{2}{section*.3}%
+\contentsline {paragraph}{第二阶段：扩展}{2}{section*.4}%
+\contentsline {paragraph}{第三阶段：模拟}{2}{section*.5}%
+\contentsline {paragraph}{第四阶段：回溯}{2}{section*.6}%
+\contentsline {subsection}{\numberline {1.2}本阶段创新点总结}{2}{subsection.1.2}%
+\contentsline {paragraph}{引入\texttt {numba}库进行提速}{2}{section*.7}%
+\contentsline {paragraph}{启发式：先查看必胜节点}{2}{section*.8}%
+\contentsline {paragraph}{启发式：及时阻止对手连线}{2}{section*.9}%
+\contentsline {paragraph}{启发式：第一步基于经验观察}{2}{section*.10}%
+\contentsline {paragraph}{超参数$c$增长机制}{3}{section*.11}%
+\contentsline {paragraph}{超额时间分配函数}{3}{section*.12}%
+\contentsline {section}{\numberline {2}第二阶段回顾：基于DQN和模块化动作设计的太空采矿AI}{3}{section.2}%
+\contentsline {subsection}{\numberline {2.1}项目流程框图}{3}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}DQN算法框架回顾}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}本阶段创新点汇总}{4}{subsection.2.3}%
+\contentsline {section}{\numberline {3}第三阶段介绍：更多样的战场特征与更灵活的动作设计}{5}{section.3}%
+\contentsline {subsection}{\numberline {3.1}将战场特征扩展到12层}{5}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}将动作“组合拳”扩展到10种}{5}{subsection.3.2}%
+\contentsline {section}{\numberline {4}小结：三个阶段的设计理念}{6}{section.4}%
